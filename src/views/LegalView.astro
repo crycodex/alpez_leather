@@ -1,0 +1,32 @@
+---
+import Base from '@/layouts/Base.astro';
+import PendingNote from '@/components/site/PendingNote.astro';
+import { getLegal } from '@/lib/server/repo';
+import { loc } from '@/i18n';
+import type { Locale } from '@/lib/schemas';
+interface Props {
+  locale: Locale;
+  doc: 'shipping' | 'terms';
+}
+const { locale, doc } = Astro.props;
+const legal = await getLegal();
+const block = legal[doc];
+const paras = loc(block.body, locale).split(/\n{2,}|\n/).map((p) => p.trim()).filter(Boolean);
+---
+<Base locale={locale} route={doc} title={loc(block.title, locale)}>
+  <article class="legal wrap">
+    <h1 class="legal__title deboss" data-press>{loc(block.title, locale)} <PendingNote locale={locale} show={block.pending} /></h1>
+    <div class="prose">{paras.map((p) => <p>{p}</p>)}</div>
+  </article>
+</Base>
+<style>
+  .legal {
+    padding-block: var(--s-7) var(--s-10);
+    display: grid;
+    gap: var(--s-7);
+  }
+  .legal__title {
+    font-size: clamp(2.4rem, 1.4rem + 4vw, 5rem);
+    font-weight: 800;
+  }
+</style>

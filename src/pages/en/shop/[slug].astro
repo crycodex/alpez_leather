@@ -1,0 +1,7 @@
+---
+import ShopView from '@/views/ShopView.astro';
+import { getCategoryBySlug } from '@/lib/server/repo';
+const category = await getCategoryBySlug(Astro.params.slug ?? '');
+if (!category) return Astro.rewrite('/404');
+---
+<ShopView locale="en" category={category} />

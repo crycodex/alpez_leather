@@ -1,0 +1,51 @@
+rules_version = '2';
+
+// Alpez Leather — reglas de Firestore
+// - Catálogo y contenido: lectura pública, escritura solo administradores.
+// - Pedidos y estadísticas: los escribe el servidor (Admin SDK, ignora estas reglas);
+//   solo administradores pueden leerlos y cambiar el estado del pedido.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /settings/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /content/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.data.name.es is string
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0;
+    }
+    match /orders/{id} {
+      allow read: if isAdmin();
+      // Solo se puede cambiar el estado
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['pending', 'confirmed', 'delivered', 'cancelled'];
+      allow create, delete: if false;
+    }
+    match /stats_daily/{date} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /admins/{uid} {
+      // Cada usuario puede comprobar si él mismo es admin; nadie lo escribe desde el cliente.
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}

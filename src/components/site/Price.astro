@@ -1,0 +1,43 @@
+---
+import { formatPrice, t } from '@/i18n';
+import type { Locale, Product } from '@/lib/schemas';
+interface Props {
+  product: Product;
+  locale: Locale;
+  size?: 'sm' | 'lg';
+}
+const { product, locale, size = 'sm' } = Astro.props;
+const hasDeltas = product.variants.some((v) => v.options.some((o) => o.priceDelta > 0));
+---
+{
+  product.price > 0 ? (
+    <span class:list={['price', `price--${size}`]}>
+      {hasDeltas && <span class="price__from">{t(locale, 'price.from')}</span>}
+      <span class="plate num">{formatPrice(product.price, locale)}</span>
+      {product.compareAtPrice && product.compareAtPrice > product.price && (
+        <s class="price__was num">{formatPrice(product.compareAtPrice, locale)}</s>
+      )}
+    </span>
+  ) : (
+    <span class="plate plate--pending">{t(locale, 'price.tbd')}</span>
+  )
+}
+<style>
+  .price {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+  .price__from {
+    font-size: var(--text-sm);
+    color: var(--choc);
+  }
+  .price__was {
+    font-size: var(--text-sm);
+    color: var(--choc);
+  }
+  .price--lg .plate {
+    font-size: var(--text-lg);
+    padding: 0.45rem 0.9rem;
+  }
+</style>

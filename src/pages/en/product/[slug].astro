@@ -1,0 +1,7 @@
+---
+import ProductView from '@/views/ProductView.astro';
+import { getProductBySlug } from '@/lib/server/repo';
+const product = await getProductBySlug(Astro.params.slug ?? '');
+if (!product) return Astro.rewrite('/404');
+---
+<ProductView locale="en" product={product} />

@@ -1,0 +1,76 @@
+/*
+ * Alpez Leather — tokens del mundo "Golpe de marca".
+ * La marca no se imprime, se presiona: arena como suelo, chocolate como tinta,
+ * profundidad por hundido (deboss), un pespunte como único divisor.
+ */
+@import '@fontsource-variable/archivo/wdth.css';
+
+:root {
+  /* Color: paleta del logo */
+  --sand: #d9bfa0;          /* suelo */
+  --sand-light: #eadbc7;    /* suelo alterno */
+  --sand-pale: #f3eadf;     /* superficies de admin, inputs */
+  --sand-shade: #c9ab88;    /* fondo de placas hundidas */
+  --choc: #5a3624;          /* tinta de marca */
+  --choc-deep: #2b1a12;     /* texto principal, secciones oscuras */
+  --choc-soft: #7a5038;     /* hover sobre chocolate */
+  --brass: #b08a4e;         /* único brillo: estado activo */
+  --danger: #8f2d1f;
+  --success: #3f5b2c;
+
+  --ink: var(--choc-deep);
+  --ink-2: var(--choc);
+  --ground: var(--sand);
+
+  /* Hundido: luz desde arriba → borde inferior claro, superior oscuro */
+  --press: 1;
+  --deboss-hi: rgb(250 238 222 / calc(0.55 * var(--press)));
+  --deboss-lo: rgb(43 26 18 / calc(0.32 * var(--press)));
+  --deboss-text: 0 calc(1px * var(--press)) 0 var(--deboss-hi), 0 calc(-1px * var(--press)) calc(1px * var(--press)) var(--deboss-lo);
+  --deboss-box: inset 0 2px 3px rgb(43 26 18 / 0.28), inset 0 -1px 0 rgb(250 238 222 / 0.55);
+  --raise-box: 0 1px 0 rgb(250 238 222 / 0.6) inset, 0 6px 18px -8px rgb(43 26 18 / 0.45);
+
+  /* Tipografía: una familia (Archivo), dos cortes */
+  --font: 'Archivo Variable', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --wide: 125%;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --text-xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+  --text-2xl: clamp(2.2rem, 1.4rem + 3.2vw, 4rem);
+  --text-display: clamp(4.5rem, 2rem + 13vw, 15rem);
+  --label-track: 0.18em;
+
+  /* Espacio: ritmo de 8 */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+  --s-9: 6rem;
+  --s-10: 9rem;
+  --gutter: clamp(1.25rem, 0.8rem + 2.2vw, 3rem);
+  --max: 88rem;
+
+  --radius: 6px;
+  --radius-lg: 14px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-press: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur: 0.45s;
+
+  --header-h: 4.5rem;
+
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0.01s;
+  }
+}

@@ -1,0 +1,88 @@
+---
+import '@/styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import Header from '@/components/site/Header.astro';
+import Footer from '@/components/site/Footer.astro';
+import CartDrawer from '@/components/site/CartDrawer.astro';
+import { getCategories, getSettings } from '@/lib/server/repo';
+import { loc, path, type RouteKey } from '@/i18n';
+import type { Locale } from '@/lib/schemas';
+
+interface Props {
+  locale: Locale;
+  title?: string;
+  description?: string;
+  /** Para el selector de idioma y hreflang */
+  route: RouteKey;
+  slug?: string;
+  image?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
+  productId?: string;
+}
+
+const { locale, title, description, route, slug, image, jsonLd, noindex, productId } = Astro.props;
+const [settings, categories] = await Promise.all([getSettings(), getCategories()]);
+
+const siteTitle = loc(settings.seoTitle, locale) || settings.brandName;
+const fullTitle = title ? `${title} — ${settings.brandName}` : siteTitle;
+const desc = description || loc(settings.seoDescription, locale);
+const site = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(path(locale, route, slug), site).href;
+const altLocale: Locale = locale === 'es' ? 'en' : 'es';
+const altHref = path(altLocale, route, slug);
+const ogImage = new URL(image || settings.ogImage?.url || '/brand/og-default.jpg', site).href;
+
+const orgLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Store',
+  name: settings.brandName,
+  url: site.href,
+  logo: new URL('/brand/icon-512.png', site).href,
+  address: { '@type': 'PostalAddress', addressLocality: 'Cotacachi', addressRegion: 'Imbabura', addressCountry: 'EC' },
+  telephone: `+${settings.whatsapp}`,
+  sameAs: [settings.instagram && `https://www.instagram.com/${settings.instagram}/`].filter(Boolean),
+};
+const ld = [orgLd, ...(Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [])];
+---
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="es" href={new URL(path('es', route, slug), site).href} />
+    <link rel="alternate" hreflang="en" href={new URL(path('en', route, slug), site).href} />
+    <link rel="alternate" hreflang="x-default" href={new URL(path('es', route, slug), site).href} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#d9bfa0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={settings.brandName} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content={locale === 'es' ? 'es_EC' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+    <ClientRouter fallback="swap" />
+  </head>
+  <body data-product-id={productId}>
+    <a class="skip" href="#main">{locale === 'es' ? 'Saltar al contenido' : 'Skip to content'}</a>
+    <Header locale={locale} altHref={altHref} categories={categories} settings={settings} />
+    <main id="main" transition:animate="fade">
+      <slot />
+    </main>
+    <Footer locale={locale} settings={settings} categories={categories} />
+    <CartDrawer locale={locale} />
+    <script>
+      import '@/scripts/motion';
+      import '@/scripts/cart-ui';
+      import '@/scripts/track';
+    </script>
+  </body>
+</html>

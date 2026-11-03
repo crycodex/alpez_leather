@@ -1,0 +1,505 @@
+---
+import Base from '@/layouts/Base.astro';
+import Icon from '@/components/site/Icon.astro';
+import ProductCard from '@/components/site/ProductCard.astro';
+import ProductImage from '@/components/site/ProductImage.astro';
+import Price from '@/components/site/Price.astro';
+import PendingNote from '@/components/site/PendingNote.astro';
+import { getCategories, getFaq, getFeatured, getHome, getProducts, getSettings } from '@/lib/server/repo';
+import { loc, path, t } from '@/i18n';
+import { waLink } from '@/lib/whatsapp';
+import type { Locale } from '@/lib/schemas';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const [home, settings, categories, featured, products, faq] = await Promise.all([
+  getHome(),
+  getSettings(),
+  getCategories(),
+  getFeatured(8),
+  getProducts(),
+  getFaq(),
+]);
+const L = (v: { es: string; en: string }) => loc(v, locale);
+const heroProduct = products.find((p) => p.id === home.heroProductId) ?? featured[0] ?? null;
+const catName = new Map(categories.map((c) => [c.id, L(c.name)]));
+const catCount = (id: string) => products.filter((p) => p.categoryId === id).length;
+const catCover = (id: string) => categories.find((c) => c.id === id)?.image ?? products.find((p) => p.categoryId === id && p.images[0])?.images[0] ?? null;
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.items.map((i) => ({ '@type': 'Question', name: L(i.q), acceptedAnswer: { '@type': 'Answer', text: L(i.a) } })),
+};
+---
+<Base locale={locale} route="home" jsonLd={faqLd}>
+  <!-- ─── Hero: el sello ─────────────────────────── -->
+  <section class="hero">
+    <div class="hero__inner wrap">
+      <svg width="0" height="0" class="sr-only" aria-hidden="true" focusable="false">
+        <filter id="press" x="-5%" y="-5%" width="110%" height="110%">
+          <feOffset in="SourceAlpha" dy="7" result="off" />
+          <feGaussianBlur in="off" stdDeviation="5" result="blur" />
+          <feComposite in="SourceAlpha" in2="blur" operator="out" result="edge" />
+          <feFlood flood-color="#120804" flood-opacity="0.75" />
+          <feComposite in2="edge" operator="in" result="shadow" />
+          <feOffset in="SourceAlpha" dy="-3" result="offUp" />
+          <feComposite in="SourceAlpha" in2="offUp" operator="out" result="lip" />
+          <feFlood flood-color="#7a5038" flood-opacity="0.9" />
+          <feComposite in2="lip" operator="in" result="lipLight" />
+          <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="shadow" /><feMergeNode in="lipLight" /></feMerge>
+        </filter>
+      </svg>
+      <h1 class="hero__stamp deboss" data-hero-press>
+        <span data-press-chars aria-hidden="true">ALPEZ</span>
+        <span class="sr-only">{settings.brandName} — {L(home.heroTagline)}</span>
+      </h1>
+
+      <div class="hero__copy">
+        <p class="hero__tagline label">{L(home.heroTagline)}</p>
+        <p class="lead hero__lead">{L(home.heroLead)}</p>
+        <div class="hero__actions">
+          <a class="btn" href={path(locale, 'shop')}>{t(locale, 'cta.shop')} <Icon name="arrow" /></a>
+          <a class="btn btn--ghost" href={waLink(settings.whatsapp)} target="_blank" rel="noopener"><Icon name="whatsapp" /> {t(locale, 'cta.whatsapp')}</a>
+        </div>
+      </div>
+
+      <figure class="hero__piece">
+        {
+          heroProduct ? (
+            <a href={path(locale, 'product', heroProduct.slug)} class="hero__piece-link">
+              <ProductImage image={home.heroImage ?? heroProduct.images[0]} alt={L(heroProduct.name)} locale={locale} ratio="4 / 5" sizes="(max-width: 900px) 90vw, 40vw" eager />
+              <figcaption class="hero__caption">
+                <span>{L(heroProduct.name)}</span>
+                <Price product={heroProduct} locale={locale} />
+              </figcaption>
+            </a>
+          ) : (
+            <ProductImage image={home.heroImage} alt={settings.brandName} locale={locale} eager />
+          )
+        }
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── Categorías ─────────────────────────────── -->
+  <section class="section cats" aria-labelledby="cats-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="cats-title" class="section-title deboss" data-press>{L(home.categoriesTitle)}</h2>
+        <a class="link-arrow" href={path(locale, 'shop')}>{t(locale, 'cta.all')} <Icon name="arrow" /></a>
+      </div>
+      <hr class="stitch" data-stitch aria-hidden="true" />
+      <ul role="list" class="cats__row" data-rise>
+        {
+          categories.map((c) => (
+            <li>
+              <a class="cat" href={path(locale, 'category', c.slug)}>
+                <ProductImage image={catCover(c.id)} alt={L(c.name)} locale={locale} ratio="3 / 4" sizes="(max-width: 760px) 70vw, 20vw" />
+                <span class="cat__name">{L(c.name)}</span>
+                <span class="cat__count label num">{catCount(c.id)}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── Destacados ─────────────────────────────── -->
+  {
+    featured.length > 0 && (
+      <section class="section section--light" aria-labelledby="feat-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="feat-title" class="section-title deboss" data-press>{L(home.featuredTitle)}</h2>
+            <a class="link-arrow" href={path(locale, 'shop')}>{t(locale, 'cta.all')} <Icon name="arrow" /></a>
+          </div>
+          <div class="grid4">
+            {featured.map((p) => <ProductCard product={p} locale={locale} categoryName={catName.get(p.categoryId)} sizes="(max-width: 760px) 50vw, 25vw" />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ─── Fabricantes directos ───────────────────── -->
+  <section class="section direct" aria-labelledby="direct-title">
+    <div class="wrap direct__inner">
+      <img src="/brand/mark-choc.png" width="297" height="128" alt="" class="direct__mark" loading="lazy" />
+      <h2 id="direct-title" class="direct__title deboss" data-press>{L(home.direct.title)} <PendingNote locale={locale} show={home.direct.pending} /></h2>
+      <p class="lead direct__body">{L(home.direct.body)}</p>
+      <a class="btn" href={waLink(settings.whatsapp)} target="_blank" rel="noopener"><Icon name="whatsapp" /> {t(locale, 'cta.whatsapp')}</a>
+    </div>
+  </section>
+
+  <!-- ─── Oficio ─────────────────────────────────── -->
+  <section class="section section--light craft" aria-labelledby="craft-title">
+    <div class="wrap craft__inner">
+      <div class="craft__media">
+        <ProductImage image={home.craft.image} alt={L(home.craft.title)} locale={locale} ratio="4 / 5" sizes="(max-width: 900px) 100vw, 45vw" reveal />
+      </div>
+      <div class="craft__text">
+        <h2 id="craft-title" class="section-title deboss" data-press>{L(home.craft.title)} <PendingNote locale={locale} show={home.craft.pending} /></h2>
+        <p class="lead">{L(home.craft.body)}</p>
+        <ol class="craft__steps" data-rise>
+          {
+            home.craft.steps.map((s, i) => (
+              <li>
+                <span class="craft__n num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                <div>
+                  <h3>{L(s.title)}</h3>
+                  <p>{L(s.body)}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Instagram ──────────────────────────────── -->
+  {
+    settings.instagram && (
+      <section class="section section--dark on-dark insta" aria-labelledby="insta-title">
+        <div class="wrap insta__inner">
+          <h2 id="insta-title">
+            <a class="insta__handle" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
+              <Icon name="instagram" size={40} /> @{settings.instagram}
+            </a>
+          </h2>
+          <p class="lead">{L(home.instagram.title)}. {L(home.instagram.body)}</p>
+          <a class="btn btn--sand" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">{t(locale, 'cta.instagram')} <Icon name="arrow" /></a>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ─── FAQ ────────────────────────────────────── -->
+  {
+    faq.items.length > 0 && (
+      <section class="section faq" id="faq" aria-labelledby="faq-title">
+        <div class="wrap faq__inner">
+          <h2 id="faq-title" class="section-title deboss" data-press>{L(faq.title)} <PendingNote locale={locale} show={faq.pending} /></h2>
+          <div class="faq__list">
+            {faq.items.map((item) => (
+              <details class="faq__item">
+                <summary>
+                  {L(item.q)}
+                  <Icon name="plus" class="faq__icon" />
+                </summary>
+                <p>{L(item.a)}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ─── Cierre ─────────────────────────────────── -->
+  <section class="section section--light closing" aria-labelledby="closing-title">
+    <div class="wrap closing__inner">
+      <h2 id="closing-title" class="closing__title deboss" data-press>{L(home.closing.title)}</h2>
+      <p class="lead">{L(home.closing.body)}</p>
+      <div class="hero__actions">
+        <a class="btn" href={path(locale, 'shop')}>{t(locale, 'cta.shop')} <Icon name="arrow" /></a>
+        <a class="btn btn--ghost" href={waLink(settings.whatsapp)} target="_blank" rel="noopener"><Icon name="whatsapp" /> {t(locale, 'cta.whatsapp')}</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* Hero */
+  .hero {
+    container-type: inline-size;
+    padding-block: clamp(1rem, 2vw, 2rem) clamp(3rem, 6vw, 6rem);
+    overflow: clip;
+  }
+  .hero__inner {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    column-gap: var(--gutter);
+    --stamp: min(calc((100cqi - 2 * var(--gutter)) / 3.6), 26rem);
+    align-items: start;
+  }
+  .hero__stamp {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    font-size: var(--stamp);
+    font-weight: 800;
+    font-stretch: 125%;
+    letter-spacing: -0.03em;
+    line-height: 0.8;
+    margin-left: -0.04em;
+    transform-origin: left top;
+    user-select: none;
+    filter: url(#press);
+  }
+  .hero__stamp,
+  .hero__stamp :global(.press-char) {
+    text-shadow:
+      0 calc(0.012em * var(--press)) 0 rgb(250 238 222 / calc(0.5 * var(--press))),
+      0 calc(-0.008em * var(--press)) calc(0.012em * var(--press)) rgb(20 10 6 / calc(0.45 * var(--press)));
+  }
+  .hero__copy {
+    grid-column: 1 / span 5;
+    grid-row: 2;
+    display: grid;
+    gap: var(--s-5);
+    align-content: start;
+    padding-top: var(--s-7);
+  }
+  .hero__tagline {
+    color: var(--choc);
+  }
+  .hero__lead {
+    font-size: var(--text-lg);
+    line-height: 1.45;
+    max-width: 28ch;
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+  .hero__piece {
+    grid-column: 7 / -1;
+    grid-row: 1 / span 2;
+    margin-top: calc(var(--stamp) * 0.5);
+    position: relative;
+    z-index: 1;
+    justify-self: end;
+    width: min(100%, calc((88svh - var(--header-h) - var(--stamp) * 0.5 - 4rem) * 0.8));
+  }
+  .hero__piece-link {
+    display: block;
+    text-decoration: none;
+  }
+  .hero__caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-top: var(--s-4);
+    font-weight: 600;
+  }
+
+  /* Categorías */
+  .cats__row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(13rem, 1fr);
+    gap: var(--s-5);
+    padding-top: var(--s-6);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    padding-bottom: var(--s-3);
+  }
+  .cats__row > li {
+    scroll-snap-align: start;
+  }
+  .cat {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-3) var(--s-2);
+    text-decoration: none;
+  }
+  .cat > :global(:first-child) {
+    grid-column: 1 / -1;
+    transition: transform 0.6s var(--ease-out);
+  }
+  .cat:hover > :global(:first-child) {
+    transform: translateY(-4px);
+  }
+  .cat__name {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    font-stretch: var(--wide);
+  }
+  .cat:hover .cat__name {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+  .cat__count {
+    color: var(--choc);
+    align-self: center;
+  }
+
+  .grid4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s-7) var(--s-5);
+  }
+
+  /* Directo */
+  .direct__inner {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: var(--s-5);
+  }
+  .direct__mark {
+    width: 5rem;
+    opacity: 0.85;
+  }
+  .direct__title {
+    font-size: clamp(2.6rem, 1.4rem + 5vw, 6rem);
+    font-weight: 800;
+    max-width: 14ch;
+  }
+  .direct__body {
+    max-width: 46ch;
+    margin-bottom: var(--s-3);
+  }
+
+  /* Oficio */
+  .craft__inner {
+    display: grid;
+    grid-template-columns: 5fr 6fr;
+    gap: clamp(2rem, 6vw, 7rem);
+    align-items: center;
+  }
+  .craft__text {
+    display: grid;
+    gap: var(--s-5);
+  }
+  .craft__steps {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--s-5);
+    margin-top: var(--s-4);
+  }
+  .craft__steps li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: var(--s-4);
+    padding-top: var(--s-4);
+    border-top: 1px dashed rgb(90 54 36 / 0.45);
+  }
+  .craft__n {
+    font-weight: 700;
+    font-stretch: var(--wide);
+    color: var(--choc);
+  }
+  .craft__steps h3 {
+    font-size: var(--text-md);
+    margin-bottom: var(--s-1);
+  }
+
+  /* Instagram */
+  .insta__inner {
+    display: grid;
+    justify-items: start;
+    gap: var(--s-5);
+  }
+  .insta__title {
+    font-size: var(--text-xl);
+    color: var(--sand);
+  }
+  .insta__handle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-4);
+    font-size: clamp(2.2rem, 1rem + 6vw, 7rem);
+    font-weight: 800;
+    font-stretch: 125%;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-decoration: none;
+    word-break: break-word;
+  }
+  .insta__handle:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 0.12em;
+  }
+
+  /* FAQ */
+  .faq__inner {
+    display: grid;
+    grid-template-columns: 4fr 7fr;
+    gap: var(--s-7);
+    align-items: start;
+  }
+  .faq__item {
+    border-bottom: 1px dashed rgb(90 54 36 / 0.5);
+  }
+  .faq__item summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-4);
+    padding-block: var(--s-5);
+    font-size: var(--text-md);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq__item :global(.faq__icon) {
+    flex: none;
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .faq__item[open] :global(.faq__icon) {
+    transform: rotate(45deg);
+  }
+  .faq__item p {
+    padding-bottom: var(--s-5);
+    max-width: 60ch;
+  }
+
+  /* Cierre */
+  .closing__inner {
+    display: grid;
+    gap: var(--s-5);
+    justify-items: start;
+  }
+  .closing__title {
+    font-size: clamp(2.4rem, 1.2rem + 5vw, 5.5rem);
+    font-weight: 800;
+    max-width: 16ch;
+  }
+
+  @media (max-width: 1100px) {
+    .grid4 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 900px) {
+    .hero__copy {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      padding-top: var(--s-5);
+    }
+    .hero__piece {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      margin-top: var(--s-7);
+    }
+    .craft__inner,
+    .faq__inner {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 760px) {
+    .grid4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s-6) var(--s-4);
+    }
+    .cats__row {
+      grid-auto-columns: 62%;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scroll-padding-inline: var(--gutter);
+    }
+  }
+</style>

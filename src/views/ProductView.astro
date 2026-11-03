@@ -1,0 +1,505 @@
+---
+import Base from '@/layouts/Base.astro';
+import Icon from '@/components/site/Icon.astro';
+import ProductImage from '@/components/site/ProductImage.astro';
+import ProductCard from '@/components/site/ProductCard.astro';
+import Price from '@/components/site/Price.astro';
+import PendingNote from '@/components/site/PendingNote.astro';
+import { getCategories, getProducts, getSettings } from '@/lib/server/repo';
+import { formatPrice, loc, path, t } from '@/i18n';
+import { waLink } from '@/lib/whatsapp';
+import type { Locale, Product } from '@/lib/schemas';
+
+interface Props {
+  locale: Locale;
+  product: Product;
+}
+const { locale, product } = Astro.props;
+const [categories, products, settings] = await Promise.all([getCategories(), getProducts(), getSettings()]);
+const L = (v: { es: string; en: string }) => loc(v, locale);
+const name = L(product.name);
+const category = categories.find((c) => c.id === product.categoryId);
+const related = products.filter((p) => p.id !== product.id && p.categoryId === product.categoryId).slice(0, 4);
+const fill = related.length < 4 ? products.filter((p) => p.id !== product.id && !related.includes(p)).slice(0, 4 - related.length) : [];
+const relatedAll = [...related, ...fill];
+const details = L(product.details).split('\n').map((s) => s.trim()).filter(Boolean);
+const soldOut = product.stockStatus === 'sold_out';
+const site = Astro.site ?? new URL(Astro.url.origin);
+const url = new URL(path(locale, 'product', product.slug), site).href;
+const askText = `${t(locale, 'wa.productAsk')} ${name}\n${url}`;
+
+/** Datos mínimos para el script de compra (sin texto innecesario). */
+const buyData = {
+  id: product.id,
+  slug: product.slug,
+  name: product.name,
+  price: product.price,
+  image: product.images[0]?.url ?? '',
+  variants: product.variants.map((v) => ({
+    id: v.id,
+    name: v.name,
+    options: v.options.map((o) => ({ id: o.id, label: o.label, delta: o.priceDelta, available: o.available })),
+  })),
+};
+
+const productLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name,
+  description: L(product.description),
+  image: product.images.map((i) => i.url).filter(Boolean),
+  brand: { '@type': 'Brand', name: settings.brandName },
+  category: category ? L(category.name) : undefined,
+  ...(product.price > 0 && {
+    offers: {
+      '@type': 'Offer',
+      price: product.price.toFixed(2),
+      priceCurrency: settings.currency,
+      availability: soldOut ? 'https://schema.org/OutOfStock' : product.stockStatus === 'made_to_order' ? 'https://schema.org/PreOrder' : 'https://schema.org/InStock',
+      url,
+    },
+  }),
+};
+---
+<Base locale={locale} route="product" slug={product.slug} title={name} description={L(product.description).slice(0, 160)} image={product.images[0]?.url} jsonLd={productLd} productId={product.id}>
+  <article class="pd wrap">
+    <nav class="pd__crumbs label" aria-label={locale === 'es' ? 'Ruta' : 'Breadcrumb'}>
+      <a href={path(locale, 'shop')}>{t(locale, 'shop.title')}</a>
+      {category && <><span aria-hidden="true">/</span><a href={path(locale, 'category', category.slug)}>{L(category.name)}</a></>}
+    </nav>
+
+    <div class="pd__grid">
+      <!-- Galería -->
+      <div class="pd__gallery" data-gallery>
+        <div class="pd__main">
+          {
+            product.images.length ? (
+              product.images.map((img, i) => (
+                <div class="pd__slide" data-slide={i} hidden={i !== 0}>
+                  <ProductImage image={img} alt={`${name} — ${i + 1}`} locale={locale} ratio="4 / 5" sizes="(max-width: 900px) 100vw, 55vw" eager={i === 0} />
+                </div>
+              ))
+            ) : (
+              <ProductImage image={null} alt={name} locale={locale} ratio="4 / 5" />
+            )
+          }
+        </div>
+        {
+          product.images.length > 1 && (
+            <div class="pd__thumbs" role="tablist" aria-label={locale === 'es' ? 'Fotos' : 'Photos'}>
+              {product.images.map((img, i) => (
+                <button type="button" class="pd__thumb" role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-thumb={i} aria-label={`${locale === 'es' ? 'Foto' : 'Photo'} ${i + 1}`}>
+                  <img src={img.url} alt="" loading="lazy" width="96" height="120" />
+                </button>
+              ))}
+            </div>
+          )
+        }
+      </div>
+
+      <!-- Compra -->
+      <div class="pd__info">
+        <div class="pd__sticky">
+          <h1 class="pd__name deboss" data-press>{name} <PendingNote locale={locale} show={product.pending} /></h1>
+          <div class="pd__price" data-price-wrap>
+            <Price product={product} locale={locale} size="lg" />
+            <span class:list={['pd__stock label', `pd__stock--${product.stockStatus}`]}>{t(locale, `product.stock.${product.stockStatus}`)}</span>
+          </div>
+          {L(product.description) && <p class="pd__desc">{L(product.description)}</p>}
+
+          <form class="pd__buy" data-buy data-product={JSON.stringify(buyData)} data-locale={locale} data-tbd={t(locale, 'price.tbd')}>
+            {
+              product.variants.map((v) => (
+                <fieldset class="vp" data-variant={v.id}>
+                  <legend class="vp__legend">
+                    <span class="label">{L(v.name)}</span>
+                    <span class="vp__chosen" data-chosen />
+                  </legend>
+                  <div class="vp__opts">
+                    {v.options.map((o, i) => (
+                      <label class:list={['vp__opt', { 'is-off': !o.available }]}>
+                        <input type="radio" name={`v-${v.id}`} value={o.id} checked={i === v.options.findIndex((x) => x.available)} disabled={!o.available} />
+                        <span>
+                          {L(o.label)}
+                          {o.priceDelta > 0 && <small class="num"> +{formatPrice(o.priceDelta, locale)}</small>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ))
+            }
+
+            <div class="pd__row">
+              <div class="stepper" data-qty>
+                <button type="button" data-qty-dec aria-label={t(locale, 'cart.decrease')}><Icon name="minus" size={16} /></button>
+                <output class="num" data-qty-val aria-label={t(locale, 'product.qty')}>1</output>
+                <button type="button" data-qty-inc aria-label={t(locale, 'cart.increase')}><Icon name="plus" size={16} /></button>
+              </div>
+              <button class="btn pd__add" type="submit" disabled={soldOut} data-add>
+                <Icon name="bag" />
+                <span data-add-label data-default={t(locale, 'product.add')} data-done={t(locale, 'product.added')}>{soldOut ? t(locale, 'product.stock.sold_out') : t(locale, 'product.add')}</span>
+              </button>
+            </div>
+            <a class="btn btn--ghost btn--block" href={waLink(settings.whatsapp, askText)} target="_blank" rel="noopener">
+              <Icon name="whatsapp" /> {t(locale, 'product.ask')}
+            </a>
+          </form>
+
+          {
+            details.length > 0 && (
+              <section class="pd__details" aria-labelledby="details-title">
+                <hr class="stitch" aria-hidden="true" />
+                <h2 id="details-title" class="label">{t(locale, 'product.details')}</h2>
+                <ul role="list">
+                  {details.map((d) => {
+                    const [k, ...rest] = d.split(':');
+                    return rest.length ? (
+                      <li><span>{k}</span><span>{rest.join(':').trim()}</span></li>
+                    ) : (
+                      <li><span class="pd__detail-solo">{d}</span></li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )
+          }
+          {L(settings.shippingNote) && <p class="pd__ship">{L(settings.shippingNote)}</p>}
+        </div>
+      </div>
+    </div>
+  </article>
+
+  {
+    relatedAll.length > 0 && (
+      <section class="section section--light" aria-labelledby="related-title">
+        <div class="wrap">
+          <h2 id="related-title" class="section-title deboss pd__related-title" data-press>{t(locale, 'product.related')}</h2>
+          <div class="pd__related">
+            {relatedAll.map((p) => <ProductCard product={p} locale={locale} sizes="(max-width: 760px) 50vw, 25vw" />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .pd {
+    padding-block: var(--s-5) var(--s-9);
+  }
+  .pd__crumbs {
+    display: flex;
+    gap: var(--s-3);
+    color: var(--choc);
+    margin-bottom: var(--s-5);
+  }
+  .pd__crumbs a {
+    text-decoration: none;
+  }
+  .pd__crumbs a:hover {
+    text-decoration: underline;
+  }
+  .pd__grid {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: clamp(2rem, 5vw, 6rem);
+    align-items: start;
+  }
+  .pd__gallery {
+    display: grid;
+    gap: var(--s-4);
+  }
+  .pd__slide[hidden] {
+    display: none;
+  }
+  .pd__thumbs {
+    display: flex;
+    gap: var(--s-3);
+    overflow-x: auto;
+  }
+  .pd__thumb {
+    flex: none;
+    width: 4.5rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+    opacity: 0.6;
+    transition: opacity var(--dur) var(--ease-out);
+    box-shadow: inset 0 0 0 0 var(--choc);
+  }
+  .pd__thumb img {
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    width: 100%;
+  }
+  .pd__thumb[aria-selected='true'],
+  .pd__thumb:hover {
+    opacity: 1;
+  }
+  .pd__thumb[aria-selected='true'] {
+    outline: 2px solid var(--choc);
+    outline-offset: 2px;
+  }
+  .pd__sticky {
+    position: sticky;
+    top: calc(var(--header-h) + var(--s-5));
+    display: grid;
+    gap: var(--s-5);
+  }
+  .pd__cat {
+    color: var(--choc);
+    text-decoration: none;
+  }
+  .pd__name {
+    font-size: clamp(2.2rem, 1.4rem + 2.8vw, 3.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .pd__price {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+  }
+  .pd__stock {
+    color: var(--choc);
+  }
+  .pd__stock--sold_out {
+    color: var(--danger);
+  }
+  .pd__desc {
+    font-size: var(--text-md);
+    max-width: 52ch;
+  }
+  .pd__buy {
+    display: grid;
+    gap: var(--s-5);
+  }
+  .vp {
+    border: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-3);
+  }
+  .vp__legend {
+    display: flex;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: 0;
+    margin-bottom: var(--s-3);
+  }
+  .vp__chosen {
+    font-size: var(--text-sm);
+    color: var(--choc);
+  }
+  .vp__opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+  .vp__opt {
+    position: relative;
+    cursor: pointer;
+  }
+  .vp__opt input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    cursor: pointer;
+  }
+  .vp__opt span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    min-height: 2.75rem;
+    padding: 0 var(--s-4);
+    border-radius: var(--radius);
+    box-shadow: inset 0 0 0 1px rgb(90 54 36 / 0.45);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    transition:
+      background-color var(--dur) var(--ease-out),
+      box-shadow 0.2s var(--ease-press);
+  }
+  .vp__opt small {
+    font-weight: 500;
+    color: var(--choc);
+  }
+  .vp__opt:hover span {
+    background: rgb(90 54 36 / 0.08);
+  }
+  .vp__opt input:checked + span {
+    background: var(--sand-shade);
+    box-shadow: var(--deboss-box), inset 0 0 0 1.5px var(--choc);
+  }
+  .vp__opt input:focus-visible + span {
+    outline: 2px solid var(--choc-deep);
+    outline-offset: 2px;
+  }
+  .vp__opt.is-off span {
+    opacity: 0.45;
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+  .pd__row {
+    display: flex;
+    gap: var(--s-3);
+  }
+  .pd__row .stepper {
+    min-height: 3.25rem;
+  }
+  .pd__row .stepper button {
+    height: 3.25rem;
+    width: 2.75rem;
+  }
+  .pd__add {
+    flex: 1;
+  }
+  .pd__details {
+    display: grid;
+    gap: var(--s-4);
+  }
+  .pd__details ul {
+    display: grid;
+  }
+  .pd__details li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-block: var(--s-3);
+    border-bottom: 1px dashed rgb(90 54 36 / 0.35);
+    font-size: var(--text-sm);
+  }
+  .pd__details li span:first-child {
+    font-weight: 600;
+  }
+  .pd__details li span + span {
+    text-align: right;
+  }
+  .pd__ship {
+    font-size: var(--text-sm);
+    color: var(--choc);
+  }
+  .pd__related-title {
+    margin-bottom: var(--s-7);
+  }
+  .pd__related {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s-7) var(--s-5);
+  }
+  @media (max-width: 900px) {
+    .pd__grid {
+      grid-template-columns: 1fr;
+    }
+    .pd__sticky {
+      position: static;
+    }
+    .pd__related {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s-6) var(--s-4);
+    }
+  }
+</style>
+
+<script>
+  import { addToCart } from '@/stores/cart';
+  import type { L10n } from '@/lib/schemas';
+
+  interface BuyData {
+    id: string;
+    slug: string;
+    name: L10n;
+    price: number;
+    image: string;
+    variants: { id: string; name: L10n; options: { id: string; label: L10n; delta: number; available: boolean }[] }[];
+  }
+
+  function initBuy() {
+    const form = document.querySelector<HTMLFormElement>('[data-buy]');
+    if (!form) return;
+    const data = JSON.parse(form.dataset.product!) as BuyData;
+    const locale = (form.dataset.locale || 'es') as 'es' | 'en';
+    const pick = (v: L10n) => v[locale] || v.es;
+    const money = (n: number) => new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-EC', { style: 'currency', currency: 'USD' }).format(n);
+    let qty = 1;
+    const qtyVal = form.querySelector<HTMLOutputElement>('[data-qty-val]')!;
+    const plate = document.querySelector<HTMLElement>('[data-price-wrap] .plate:not(.plate--pending)');
+
+    const selections = () => {
+      const out: Record<string, string> = {};
+      data.variants.forEach((v) => {
+        const checked = form.querySelector<HTMLInputElement>(`input[name="v-${v.id}"]:checked`);
+        if (checked) out[v.id] = checked.value;
+      });
+      return out;
+    };
+    const unitPrice = (sel: Record<string, string>) =>
+      data.price > 0 ? data.price + data.variants.reduce((n, v) => n + (v.options.find((o) => o.id === sel[v.id])?.delta ?? 0), 0) : 0;
+
+    const refresh = () => {
+      const sel = selections();
+      data.variants.forEach((v) => {
+        const chosen = form.querySelector<HTMLElement>(`[data-variant="${v.id}"] [data-chosen]`);
+        const opt = v.options.find((o) => o.id === sel[v.id]);
+        if (chosen) chosen.textContent = opt ? pick(opt.label) : '';
+      });
+      if (plate && data.price > 0) plate.textContent = money(unitPrice(sel));
+      qtyVal.textContent = String(qty);
+    };
+
+    form.addEventListener('change', refresh);
+    form.querySelector('[data-qty-dec]')?.addEventListener('click', () => {
+      qty = Math.max(1, qty - 1);
+      refresh();
+    });
+    form.querySelector('[data-qty-inc]')?.addEventListener('click', () => {
+      qty = Math.min(99, qty + 1);
+      refresh();
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const sel = selections();
+      const missing = data.variants.find((v) => !sel[v.id] && v.options.some((o) => o.available));
+      if (missing) {
+        form.querySelector<HTMLElement>(`[data-variant="${missing.id}"] input:not(:disabled)`)?.focus();
+        return;
+      }
+      addToCart(
+        {
+          productId: data.id,
+          slug: data.slug,
+          name: data.name,
+          image: data.image,
+          selections: sel,
+          labels: data.variants
+            .filter((v) => sel[v.id])
+            .map((v) => ({ name: v.name, value: v.options.find((o) => o.id === sel[v.id])!.label })),
+          unitPrice: unitPrice(sel),
+        },
+        qty,
+      );
+      window.dispatchEvent(new CustomEvent('alpez:added', { detail: data.id }));
+      const label = form.querySelector<HTMLElement>('[data-add-label]')!;
+      label.textContent = label.dataset.done!;
+      setTimeout(() => (label.textContent = label.dataset.default!), 1600);
+      qty = 1;
+      refresh();
+      window.dispatchEvent(new CustomEvent('alpez:open-cart'));
+    });
+
+    refresh();
+
+    // Galería
+    const gallery = document.querySelector<HTMLElement>('[data-gallery]');
+    gallery?.querySelectorAll<HTMLButtonElement>('[data-thumb]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const i = btn.dataset.thumb;
+        gallery.querySelectorAll<HTMLElement>('[data-slide]').forEach((s) => (s.hidden = s.dataset.slide !== i));
+        gallery.querySelectorAll('[data-thumb]').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+      }),
+    );
+  }
+  document.addEventListener('astro:page-load', initBuy);
+</script>

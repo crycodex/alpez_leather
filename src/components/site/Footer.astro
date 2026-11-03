@@ -1,0 +1,139 @@
+---
+import Icon from './Icon.astro';
+import { loc, path, t } from '@/i18n';
+import type { Category, Locale, SiteSettings } from '@/lib/schemas';
+import { waLink } from '@/lib/whatsapp';
+
+interface Props {
+  locale: Locale;
+  settings: SiteSettings;
+  categories: Category[];
+}
+const { locale, settings, categories } = Astro.props;
+const year = new Date().getFullYear();
+const phonePretty = `+${settings.whatsapp.replace(/^(\d{3})(\d{2})(\d{3})(\d{4})$/, '$1 $2 $3 $4')}`;
+const address = loc(settings.address, locale);
+const hours = loc(settings.hours, locale);
+---
+<footer class="ftr on-dark">
+  <div class="wrap">
+    <div class="ftr__top">
+      <img src="/brand/logo-sand.png" width="470" height="339" alt={settings.brandName} class="ftr__logo" loading="lazy" />
+      <p class="ftr__made label">{t(locale, 'footer.made')}</p>
+    </div>
+    <hr class="stitch" aria-hidden="true" />
+    <div class="ftr__grid">
+      <nav aria-label={t(locale, 'nav.shop')}>
+        <h2 class="label ftr__h">{t(locale, 'nav.shop')}</h2>
+        <ul role="list">
+          {categories.map((c) => <li><a href={path(locale, 'category', c.slug)}>{loc(c.name, locale)}</a></li>)}
+        </ul>
+      </nav>
+      <nav aria-label="Info">
+        <h2 class="label ftr__h">Alpez</h2>
+        <ul role="list">
+          <li><a href={path(locale, 'about')}>{t(locale, 'nav.about')}</a></li>
+          <li><a href={`${path(locale, 'home')}#faq`}>{t(locale, 'footer.faq')}</a></li>
+          <li><a href={path(locale, 'shipping')}>{t(locale, 'footer.shipping')}</a></li>
+          <li><a href={path(locale, 'terms')}>{t(locale, 'footer.terms')}</a></li>
+        </ul>
+      </nav>
+      <div>
+        <h2 class="label ftr__h">{t(locale, 'footer.contact')}</h2>
+        <ul role="list" class="ftr__contact">
+          <li>
+            <a href={waLink(settings.whatsapp)} target="_blank" rel="noopener"><Icon name="whatsapp" size={18} /> <span class="num">{phonePretty}</span></a>
+          </li>
+          {settings.instagram && (
+            <li>
+              <a href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener"><Icon name="instagram" size={18} /> @{settings.instagram}</a>
+            </li>
+          )}
+          {settings.facebook && (
+            <li><a href={settings.facebook} target="_blank" rel="noopener"><Icon name="facebook" size={18} /> Facebook</a></li>
+          )}
+          {settings.tiktok && (
+            <li><a href={settings.tiktok} target="_blank" rel="noopener"><Icon name="tiktok" size={18} /> TikTok</a></li>
+          )}
+          {settings.email && (
+            <li><a href={`mailto:${settings.email}`}><Icon name="mail" size={18} /> {settings.email}</a></li>
+          )}
+          {address && <li><span><Icon name="pin" size={18} /> {address}</span></li>}
+          {hours && <li class="ftr__hours">{hours}</li>}
+        </ul>
+      </div>
+    </div>
+    <div class="ftr__legal">
+      <p>© {year} {settings.brandName}. {t(locale, 'footer.rights')}</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .ftr {
+    background: var(--choc-deep);
+    color: var(--sand-light);
+    padding-block: var(--s-9) var(--s-6);
+  }
+  .ftr__top {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--s-5);
+    padding-bottom: var(--s-6);
+  }
+  .ftr__logo {
+    width: clamp(8rem, 6rem + 6vw, 12rem);
+  }
+  .ftr__made {
+    color: var(--sand);
+  }
+  .ftr__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-7);
+    padding-block: var(--s-7);
+  }
+  .ftr__h {
+    color: var(--sand);
+    margin-bottom: var(--s-4);
+  }
+  .ftr ul {
+    display: grid;
+    gap: var(--s-3);
+  }
+  .ftr a {
+    text-decoration: none;
+  }
+  .ftr a:hover {
+    text-decoration: underline;
+  }
+  .ftr__contact a,
+  .ftr__contact span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .ftr__hours {
+    white-space: pre-line;
+    color: var(--sand);
+    font-size: var(--text-sm);
+  }
+  .ftr__legal {
+    font-size: var(--text-sm);
+    color: var(--sand);
+    padding-top: var(--s-5);
+  }
+  @media (max-width: 760px) {
+    .ftr__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .ftr__grid > :last-child {
+      grid-column: 1 / -1;
+    }
+    .ftr__top {
+      flex-direction: column;
+      align-items: start;
+    }
+  }
+</style>

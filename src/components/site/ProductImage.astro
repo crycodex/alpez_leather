@@ -1,0 +1,48 @@
+---
+import { Image } from 'astro:assets';
+import Placeholder from './Placeholder.astro';
+import type { ImageRef, Locale } from '@/lib/schemas';
+import { loc } from '@/i18n';
+
+interface Props {
+  image?: ImageRef | null;
+  alt: string;
+  locale: Locale;
+  ratio?: string;
+  sizes?: string;
+  widths?: number[];
+  eager?: boolean;
+  class?: string;
+  tone?: 'sand' | 'light' | 'dark';
+  reveal?: boolean;
+}
+const { image, alt, locale, ratio = '4 / 5', sizes = '(max-width: 760px) 100vw, 33vw', widths = [360, 540, 720, 1080, 1440], eager, class: cls, tone, reveal } = Astro.props;
+const altText = (image?.alt && loc(image.alt, locale)) || alt;
+---
+{
+  image?.url ? (
+    <div class:list={['pimg', cls]} style={`aspect-ratio:${ratio}`} data-reveal={reveal ? '' : undefined}>
+      {image.width && image.height ? (
+        <Image src={image.url} width={image.width} height={image.height} alt={altText} sizes={sizes} widths={widths.filter((w) => w <= image.width!)} loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} />
+      ) : (
+        <Image src={image.url} inferSize alt={altText} sizes={sizes} widths={widths} loading={eager ? 'eager' : 'lazy'} />
+      )}
+    </div>
+  ) : (
+    <Placeholder locale={locale} ratio={ratio} class={cls} tone={tone} />
+  )
+}
+
+<style>
+  .pimg {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--sand-shade);
+  }
+  .pimg :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+</style>

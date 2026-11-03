@@ -1,0 +1,19 @@
+---
+import AdminApp from '@/components/admin/AdminApp';
+import '@/styles/admin.css';
+export const prerender = true;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin — Alpez Leather</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="adm-body">
+    <AdminApp client:only="react" />
+    <noscript>El panel necesita JavaScript.</noscript>
+  </body>
+</html>

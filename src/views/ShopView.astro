@@ -1,0 +1,209 @@
+---
+import Base from '@/layouts/Base.astro';
+import ProductCard from '@/components/site/ProductCard.astro';
+import { getCategories, getProducts } from '@/lib/server/repo';
+import { loc, path, plural, t } from '@/i18n';
+import type { Category, Locale } from '@/lib/schemas';
+
+interface Props {
+  locale: Locale;
+  category?: Category | null;
+}
+const { locale, category } = Astro.props;
+const [categories, products] = await Promise.all([getCategories(), getProducts({ categoryId: category?.id })]);
+const L = (v: { es: string; en: string }) => loc(v, locale);
+const catName = new Map(categories.map((c) => [c.id, L(c.name)]));
+const title = category ? L(category.name) : t(locale, 'shop.title');
+const description = category ? L(category.description) : undefined;
+const listLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  itemListElement: products.map((p, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    url: new URL(path(locale, 'product', p.slug), Astro.site ?? Astro.url.origin).href,
+    name: L(p.name),
+  })),
+};
+---
+<Base locale={locale} route={category ? 'category' : 'shop'} slug={category?.slug} title={title} description={description || undefined} jsonLd={listLd}>
+  <section class="shop">
+    <div class="wrap">
+      <header class="shop__head">
+        <h1 class="shop__title deboss" data-press>{title}</h1>
+        {description && <p class="lead">{description}</p>}
+      </header>
+
+      <div class="shop__bar">
+        <nav aria-label={locale === 'es' ? 'Categorías' : 'Categories'}>
+          <ul role="list" class="filters">
+            <li><a class="filter" href={path(locale, 'shop')} aria-current={!category ? 'page' : undefined}>{t(locale, 'shop.all')}</a></li>
+            {
+              categories.map((c) => (
+                <li>
+                  <a class="filter" href={path(locale, 'category', c.slug)} aria-current={category?.id === c.id ? 'page' : undefined}>
+                    {L(c.name)}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+        <div class="shop__meta">
+          <span class="label num">{plural(locale, products.length, 'shop.count.one', 'shop.count.other')}</span>
+          <label class="sort">
+            <span class="sr-only">{t(locale, 'shop.sort')}</span>
+            <select data-sort>
+              <option value="default">{t(locale, 'shop.sort.default')}</option>
+              <option value="asc">{t(locale, 'shop.sort.priceAsc')}</option>
+              <option value="desc">{t(locale, 'shop.sort.priceDesc')}</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <hr class="stitch" data-stitch aria-hidden="true" />
+
+      {
+        products.length ? (
+          <div class="shop__grid" data-grid>
+            {products.map((p) => (
+              <ProductCard product={p} locale={locale} categoryName={category ? undefined : catName.get(p.categoryId)} sizes="(max-width: 760px) 50vw, (max-width: 1100px) 33vw, 25vw" />
+            ))}
+          </div>
+        ) : (
+          <div class="shop__empty">
+            <p class="lead">{t(locale, 'shop.empty')}</p>
+            <a class="btn btn--ghost" href={path(locale, 'shop')}>{t(locale, 'shop.all')}</a>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</Base>
+
+<style>
+  .shop {
+    padding-block: var(--s-7) var(--s-10);
+  }
+  .shop__head {
+    display: grid;
+    gap: var(--s-4);
+    margin-bottom: var(--s-7);
+  }
+  .shop__title {
+    font-size: clamp(3rem, 1.5rem + 7vw, 8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+  }
+  .shop__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-bottom: var(--s-4);
+  }
+  .shop__bar > nav {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+  .filter {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0 var(--s-4);
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgb(90 54 36 / 0.4);
+    transition:
+      background-color var(--dur) var(--ease-out),
+      box-shadow var(--dur) var(--ease-out);
+  }
+  .filter:hover {
+    background: rgb(90 54 36 / 0.08);
+  }
+  .filter[aria-current='page'] {
+    background: var(--sand-shade);
+    box-shadow: var(--deboss-box);
+  }
+  .shop__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--s-5);
+    color: var(--choc);
+  }
+  .sort select {
+    appearance: none;
+    min-height: 2.5rem;
+    padding: 0 2.2rem 0 var(--s-4);
+    border: 0;
+    border-radius: var(--radius);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a3624' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+        no-repeat right 0.8rem center,
+      var(--sand-pale);
+    box-shadow: var(--deboss-box);
+    font-size: var(--text-sm);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .shop__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s-7) var(--s-5);
+    padding-top: var(--s-6);
+  }
+  .shop__empty {
+    display: grid;
+    justify-items: start;
+    gap: var(--s-5);
+    padding-block: var(--s-8);
+  }
+  @media (max-width: 1100px) {
+    .shop__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 760px) {
+    .shop__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s-6) var(--s-4);
+    }
+    .shop__bar > nav {
+      flex: 1 1 100%;
+    }
+    .filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+    .filter {
+      white-space: nowrap;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const select = document.querySelector<HTMLSelectElement>('[data-sort]');
+    const grid = document.querySelector<HTMLElement>('[data-grid]');
+    if (!select || !grid) return;
+    select.addEventListener('change', () => {
+      const cards = [...grid.children] as HTMLElement[];
+      const price = (el: HTMLElement) => Number(el.dataset.price ?? 0) || Infinity;
+      const order = (el: HTMLElement) => Number(el.dataset.order ?? 0);
+      cards.sort((a, b) => (select.value === 'asc' ? price(a) - price(b) : select.value === 'desc' ? (price(b) === Infinity ? -1 : price(a) === Infinity ? 1 : price(b) - price(a)) : order(a) - order(b)));
+      grid.append(...cards);
+    });
+  });
+</script>

@@ -1,0 +1,29 @@
+---
+import Base from '@/layouts/Base.astro';
+import CartPanel from '@/components/site/CartPanel.astro';
+import { t } from '@/i18n';
+import type { Locale } from '@/lib/schemas';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+<Base locale={locale} route="cart" title={t(locale, 'cart.title')} noindex>
+  <section class="cartpage wrap">
+    <h1 class="cartpage__title deboss" data-press>{t(locale, 'cart.title')}</h1>
+    <div class="cartpage__panel">
+      <CartPanel locale={locale} variant="page" />
+    </div>
+  </section>
+</Base>
+<style>
+  .cartpage {
+    padding-block: var(--s-7) var(--s-10);
+    max-width: 48rem;
+  }
+  .cartpage__title {
+    font-size: clamp(2.8rem, 1.5rem + 5vw, 6rem);
+    font-weight: 800;
+    margin-bottom: var(--s-7);
+  }
+</style>

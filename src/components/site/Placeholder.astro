@@ -1,0 +1,64 @@
+---
+/**
+ * Marcador para fotos pendientes: la montaña del logo hundida en el cuero.
+ * Digno a propósito: el sitio puede publicarse antes de tener todas las fotos.
+ */
+import type { Locale } from '@/lib/schemas';
+import { t } from '@/i18n';
+interface Props {
+  locale: Locale;
+  ratio?: string;
+  class?: string;
+  tone?: 'sand' | 'light' | 'dark';
+  label?: boolean;
+}
+const { locale, ratio = '4 / 5', class: cls, tone = 'sand', label = true } = Astro.props;
+---
+<div class:list={['ph', `ph--${tone}`, cls]} style={`aspect-ratio:${ratio}`} role="img" aria-label={t(locale, 'pending.photo')}>
+  <svg class="ph__mark" viewBox="0 0 120 60" fill="none" aria-hidden="true">
+    <path d="M6 56 44 22l16 13" />
+    <path d="M40 40 70 6l44 50" />
+  </svg>
+  {label && <span class="ph__label label">{t(locale, 'pending.photo')}</span>}
+</div>
+
+<style>
+  .ph {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    overflow: hidden;
+    background: var(--sand-shade);
+    box-shadow: var(--deboss-box);
+    border-radius: var(--radius);
+    color: var(--choc);
+  }
+  .ph--light {
+    background: var(--sand);
+  }
+  .ph--dark {
+    background: var(--choc);
+    color: var(--sand);
+  }
+  .ph__mark {
+    width: min(46%, 11rem);
+    stroke: currentColor;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.55;
+    filter: drop-shadow(0 1px 0 rgb(250 238 222 / 0.5)) drop-shadow(0 -1px 0 rgb(43 26 18 / 0.25));
+  }
+  .ph--dark .ph__mark {
+    filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.4));
+  }
+  .ph__label {
+    position: absolute;
+    bottom: var(--s-4);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    color: var(--choc-deep);
+  }
+</style>

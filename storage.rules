@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Fotos: lectura pública; subida solo administradores, solo imágenes y < 8 MB.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+    match /{folder}/{allPaths=**} {
+      allow read: if folder in ['products', 'categories', 'content'];
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && folder in ['products', 'categories', 'content']
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

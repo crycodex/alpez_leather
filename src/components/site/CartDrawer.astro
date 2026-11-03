@@ -1,0 +1,85 @@
+---
+import CartPanel from './CartPanel.astro';
+import Icon from './Icon.astro';
+import { t } from '@/i18n';
+import type { Locale } from '@/lib/schemas';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+<div class="drawer" id="cart-drawer" data-cart-drawer role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" hidden>
+  <div class="drawer__scrim" data-cart-close></div>
+  <aside class="drawer__panel" data-lenis-prevent>
+    <div class="drawer__head">
+      <h2 id="cart-drawer-title" class="drawer__title">{t(locale, 'cart.title')}</h2>
+      <button type="button" class="drawer__close" data-cart-close>
+        <Icon name="close" size={24} />
+        <span class="sr-only">{t(locale, 'nav.close')}</span>
+      </button>
+    </div>
+    <CartPanel locale={locale} variant="drawer" />
+  </aside>
+</div>
+
+<style>
+  .drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+  }
+  .drawer[hidden] {
+    display: none;
+  }
+  .drawer__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(43 26 18 / 0.45);
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-out);
+  }
+  .drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(30rem, 100%);
+    background: var(--sand-light);
+    box-shadow: -20px 0 50px -20px rgb(43 26 18 / 0.5);
+    padding: var(--s-5) var(--s-6) var(--s-7);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(100%);
+    transition: transform 0.55s var(--ease-out);
+  }
+  .drawer.is-open .drawer__scrim {
+    opacity: 1;
+  }
+  .drawer.is-open .drawer__panel {
+    transform: none;
+  }
+  .drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--s-5);
+  }
+  .drawer__title {
+    font-size: var(--text-xl);
+  }
+  .drawer__close {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+  }
+  .drawer__close:hover {
+    background: rgb(90 54 36 / 0.1);
+  }
+  @media (max-width: 520px) {
+    .drawer__panel {
+      padding-inline: var(--s-5);
+    }
+  }
+</style>

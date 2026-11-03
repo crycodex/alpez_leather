@@ -1,0 +1,214 @@
+---
+/**
+ * Contenido del carrito (lista + total + datos + envío a WhatsApp).
+ * Se usa dentro del cajón lateral y en la página /carrito. Lo pinta src/scripts/cart-ui.ts.
+ */
+import Icon from './Icon.astro';
+import { path, t } from '@/i18n';
+import type { Locale } from '@/lib/schemas';
+interface Props {
+  locale: Locale;
+  variant?: 'drawer' | 'page';
+}
+const { locale, variant = 'drawer' } = Astro.props;
+const i18n = {
+  remove: t(locale, 'cart.remove'),
+  inc: t(locale, 'cart.increase'),
+  dec: t(locale, 'cart.decrease'),
+  tbd: t(locale, 'price.tbd'),
+  photo: t(locale, 'pending.photo'),
+  sending: t(locale, 'checkout.sending'),
+  send: t(locale, 'checkout.send'),
+  error: t(locale, 'checkout.error'),
+  nameRequired: t(locale, 'checkout.nameRequired'),
+  productBase: path(locale, 'product', '__slug__'),
+};
+---
+<div class:list={['cp', `cp--${variant}`]} data-cart-panel data-locale={locale} data-i18n={JSON.stringify(i18n)}>
+  <div class="cp__empty" data-cart-empty hidden>
+    <svg class="cp__empty-mark" viewBox="0 0 120 60" fill="none" aria-hidden="true"><path d="M6 56 44 22l16 13" /><path d="M40 40 70 6l44 50" /></svg>
+    <p>{t(locale, 'cart.empty')}</p>
+    <a class="btn btn--ghost" href={path(locale, 'shop')} data-cart-close-link>{t(locale, 'cart.emptyCta')}</a>
+  </div>
+
+  <ul role="list" class="cp__list" data-cart-list></ul>
+
+  <div class="cp__summary" data-cart-summary hidden>
+    <hr class="stitch" aria-hidden="true" />
+    <div class="cp__total">
+      <span class="label">{t(locale, 'cart.subtotal')}</span>
+      <strong class="num" data-cart-total>$0.00</strong>
+    </div>
+    <p class="cp__note" data-cart-unpriced hidden>{t(locale, 'cart.unpriced')}</p>
+
+    <form class="cp__form" data-checkout-form novalidate>
+      <h3 class="cp__form-title">{t(locale, 'checkout.title')}</h3>
+      <div class="field">
+        <label for={`co-name-${variant}`}>{t(locale, 'checkout.name')}</label>
+        <input class="input" id={`co-name-${variant}`} name="name" autocomplete="name" required maxlength="80" />
+      </div>
+      <div class="field">
+        <label for={`co-city-${variant}`}>{t(locale, 'checkout.city')}</label>
+        <input class="input" id={`co-city-${variant}`} name="city" autocomplete="address-level2" maxlength="80" />
+      </div>
+      <div class="field">
+        <label for={`co-note-${variant}`}>{t(locale, 'checkout.note')}</label>
+        <textarea class="input" id={`co-note-${variant}`} name="note" maxlength="500" rows="2" placeholder={t(locale, 'checkout.notePh')}></textarea>
+      </div>
+      <p class="field-error" data-checkout-error role="alert" hidden></p>
+      <button class="btn btn--block" type="submit" data-checkout-submit>
+        <Icon name="whatsapp" /> <span>{t(locale, 'checkout.send')}</span>
+      </button>
+      <p class="cp__hint">{t(locale, 'checkout.hint')}</p>
+    </form>
+  </div>
+</div>
+
+<style is:global>
+  .cp {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+  }
+  .cp__empty {
+    display: grid;
+    justify-items: center;
+    gap: var(--s-5);
+    text-align: center;
+    padding-block: var(--s-8);
+    color: var(--choc);
+  }
+  .cp__empty-mark {
+    width: 6rem;
+    stroke: currentColor;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.5;
+  }
+  .cp__list {
+    display: grid;
+    gap: var(--s-5);
+  }
+  .cp-item {
+    display: grid;
+    grid-template-columns: 5rem 1fr auto;
+    gap: var(--s-4);
+    align-items: start;
+  }
+  .cp-item__img {
+    width: 5rem;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: var(--radius);
+    background: var(--sand-shade);
+    box-shadow: var(--deboss-box);
+  }
+  .cp-item__ph {
+    display: grid;
+    place-items: center;
+    color: var(--choc);
+  }
+  .cp-item__ph svg {
+    width: 60%;
+    stroke: currentColor;
+    stroke-width: 4;
+    stroke-linecap: round;
+    opacity: 0.5;
+  }
+  .cp-item__name {
+    font-weight: 600;
+    text-decoration: none;
+    line-height: 1.3;
+    display: block;
+  }
+  .cp-item__name:hover {
+    text-decoration: underline;
+  }
+  .cp-item__vars {
+    font-size: var(--text-sm);
+    color: var(--choc);
+    margin-top: var(--s-1);
+  }
+  .cp-item__row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    margin-top: var(--s-3);
+  }
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius);
+    box-shadow: var(--deboss-box);
+    background: var(--sand-pale);
+  }
+  .stepper button {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius);
+  }
+  .stepper button:hover {
+    background: rgb(90 54 36 / 0.1);
+  }
+  .stepper button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .stepper output {
+    min-width: 2rem;
+    text-align: center;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .cp-item__remove {
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    color: var(--choc);
+  }
+  .cp-item__price {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .cp-item__price--tbd {
+    font-weight: 500;
+    font-size: var(--text-sm);
+    color: var(--choc);
+    max-width: 7rem;
+    text-align: right;
+    white-space: normal;
+  }
+  .cp__summary {
+    display: grid;
+    gap: var(--s-4);
+  }
+  .cp__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .cp__total strong {
+    font-size: var(--text-xl);
+    font-stretch: var(--wide);
+  }
+  .cp__note,
+  .cp__hint {
+    font-size: var(--text-sm);
+    color: var(--choc);
+  }
+  .cp__form {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--s-3);
+  }
+  .cp__form-title {
+    font-size: var(--text-lg);
+  }
+  .cp__hint {
+    text-align: center;
+  }
+</style>
