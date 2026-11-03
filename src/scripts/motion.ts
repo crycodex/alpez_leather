@@ -44,15 +44,7 @@ function animate() {
       );
     });
 
-    // El sello del hero se hunde más al hacer scroll
-    document.querySelectorAll<HTMLElement>('[data-hero-press]').forEach((el) => {
-      gsap.to(el, {
-        scale: 0.94,
-        '--press': 1.8,
-        ease: 'none',
-        scrollTrigger: { trigger: el, start: 'top top+=80', end: 'bottom top', scrub: 0.6 },
-      });
-    });
+    scenes();
 
     gsap.utils.toArray<HTMLElement>('[data-press]').forEach((el) => {
       gsap.fromTo(
@@ -89,7 +81,71 @@ function animate() {
   });
 }
 
+/**
+ * Escenas a pantalla completa, conducidas por el scroll (scrub + pin).
+ * Escritorio y móvil tienen su propia versión; con movimiento reducido no existen.
+ */
+let mm: gsap.MatchMedia | null = null;
+function scenes() {
+  mm = gsap.matchMedia();
+  mm.add(
+    { desktop: '(min-width: 901px)', mobile: '(max-width: 900px)' },
+    (c) => {
+      const { desktop } = c.conditions as { desktop: boolean };
+      // Las escenas se fijan justo debajo del header sticky
+      const top = () => `top ${document.querySelector<HTMLElement>('[data-header]')?.offsetHeight ?? 0}px`;
+
+      // 1. Hero: el sello se presiona y se aleja, la pieza sube, el texto se va
+      const hero = document.querySelector<HTMLElement>('[data-hero]');
+      if (hero) {
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: hero, start: top, end: desktop ? '+=90%' : '+=60%', scrub: 0.8, pin: true, anticipatePin: 1 },
+        });
+        tl.to(hero.querySelector('[data-hero-press]'), { scale: desktop ? 0.78 : 0.88, yPercent: -12, '--press': 2.2, transformOrigin: 'left top' }, 0)
+          .to(hero.querySelector('.hero__copy'), { autoAlpha: 0, y: -60 }, 0)
+          .to(hero.querySelector('.hero__piece'), { yPercent: desktop ? -22 : -10, scale: 1.04 }, 0);
+      }
+
+      // 2. Categorías: recorrido horizontal fijado (solo escritorio)
+      const cats = document.querySelector<HTMLElement>('[data-hscroll]');
+      const row = cats?.querySelector<HTMLElement>('[data-hscroll-row]');
+      if (desktop && cats && row) {
+        row.classList.add('is-hscroll');
+        const dist = () => Math.max(0, row.scrollWidth - row.clientWidth);
+        if (dist() > 40) {
+          gsap.to(row.children, {
+            x: () => -dist(),
+            ease: 'none',
+            scrollTrigger: { trigger: cats, start: top, end: () => `+=${dist()}`, scrub: 0.8, pin: true, invalidateOnRefresh: true },
+          });
+        }
+      }
+
+      // 3. Manifiesto: las palabras se encienden con el scroll, pantalla completa
+      document.querySelectorAll<HTMLElement>('[data-words]').forEach((el) => {
+        const split = SplitText.create(el, { type: 'words' });
+        splits.push(split);
+        gsap.fromTo(
+          split.words,
+          { opacity: 0.14 },
+          { opacity: 1, stagger: 0.12, ease: 'none', scrollTrigger: { trigger: el.closest('section') ?? el, start: top, end: '+=70%', scrub: 0.6, pin: true } },
+        );
+      });
+
+      // 4. Cierre: el título crece hasta su tamaño a medida que llega
+      document.querySelectorAll<HTMLElement>('[data-grow]').forEach((el) => {
+        gsap.fromTo(el, { scale: 0.86, opacity: 0.4 }, { scale: 1, opacity: 1, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'top 40%', scrub: 0.6 } });
+      });
+
+      return () => row?.classList.remove('is-hscroll');
+    },
+  );
+}
+
 function cleanup() {
+  mm?.revert();
+  mm = null;
   ctx?.revert();
   ctx = null;
   splits.splice(0).forEach((s) => s.revert());

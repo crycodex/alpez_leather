@@ -11,6 +11,7 @@ const config = {
   storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+  measurementId: import.meta.env.PUBLIC_FIREBASE_MEASUREMENT_ID || undefined,
 };
 
 const useEmulators = import.meta.env.PUBLIC_USE_FIREBASE_EMULATORS === 'true';
@@ -26,7 +27,8 @@ export function fb() {
   if (!app) {
     app = getApps()[0] ?? initializeApp({ ...config, apiKey: config.apiKey || 'demo-key' });
     auth = getAuth(app);
-    db = getFirestore(app);
+    const dbId = import.meta.env.PUBLIC_FIREBASE_DATABASE_ID;
+    db = dbId && dbId !== '(default)' && !useEmulators ? getFirestore(app, dbId) : getFirestore(app);
     storage = getStorage(app);
     if (useEmulators) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });

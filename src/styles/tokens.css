@@ -4,6 +4,7 @@
  * profundidad por hundido (deboss), un pespunte como único divisor.
  */
 @import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource/prata/latin-400.css';
 
 :root {
   /* Color: paleta del logo */
@@ -32,6 +33,8 @@
 
   /* Tipografía: una familia (Archivo), dos cortes */
   --font: 'Archivo Variable', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  /* Serifa del logo: sello, títulos y etiquetas */
+  --font-display: 'Prata', 'Archivo Variable', serif;
   --wide: 125%;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -40,7 +43,6 @@
   --text-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
   --text-xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
   --text-2xl: clamp(2.2rem, 1.4rem + 3.2vw, 4rem);
-  --text-display: clamp(4.5rem, 2rem + 13vw, 15rem);
   --label-track: 0.18em;
 
   /* Espacio: ritmo de 8 */

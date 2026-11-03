@@ -8,6 +8,7 @@ export async function requireAdmin(request: Request): Promise<{ uid: string } | 
   if (!token || !auth || !db) return null;
   try {
     const decoded = await auth.verifyIdToken(token);
+    if (decoded.admin === true) return { uid: decoded.uid };
     const snap = await db.collection('admins').doc(decoded.uid).get();
     return snap.exists ? { uid: decoded.uid } : null;
   } catch {

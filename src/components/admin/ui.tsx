@@ -1,6 +1,7 @@
 /** Piezas de interfaz del panel. Mismo mundo que el sitio, en clave de trabajo. */
 import { createContext, useCallback, useContext, useId, useState, type ReactNode } from 'react';
 import type { L10n } from '@/lib/schemas';
+import { Listbox } from './Listbox';
 
 export function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const p: Record<string, ReactNode> = {
@@ -127,15 +128,11 @@ export function Toggle({ label, checked, onChange, help }: { label: string; chec
 export function Select<T extends string>({ label, value, onChange, options, help }: { label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; help?: ReactNode }) {
   const id = useId();
   return (
-    <Field label={label} help={help} htmlFor={id}>
-      <select id={id} className="a-input a-select" value={value} onChange={(e) => onChange(e.target.value as T)}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </Field>
+    <div className="a-field">
+      <span className="a-field__label" id={`${id}-l`}>{label}</span>
+      <Listbox value={value} onChange={onChange} options={options} labelledBy={`${id}-l`} />
+      {help && <p className="a-field__help">{help}</p>}
+    </div>
   );
 }
 

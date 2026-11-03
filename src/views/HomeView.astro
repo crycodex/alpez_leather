@@ -35,7 +35,7 @@ const faqLd = {
 ---
 <Base locale={locale} route="home" jsonLd={faqLd}>
   <!-- ─── Hero: el sello ─────────────────────────── -->
-  <section class="hero">
+  <section class="hero" data-hero>
     <div class="hero__inner wrap">
       <svg width="0" height="0" class="sr-only" aria-hidden="true" focusable="false">
         <filter id="press" x="-5%" y="-5%" width="110%" height="110%">
@@ -52,7 +52,8 @@ const faqLd = {
         </filter>
       </svg>
       <h1 class="hero__stamp deboss" data-hero-press>
-        <span data-press-chars aria-hidden="true">ALPEZ</span>
+        <span class="hero__alpez" data-press-chars aria-hidden="true">ALPEZ</span>
+        <span class="hero__leather" data-press-chars aria-hidden="true">{'LEATHER'.split('').map((c) => <span>{c}</span>)}</span>
         <span class="sr-only">{settings.brandName} — {L(home.heroTagline)}</span>
       </h1>
 
@@ -84,14 +85,14 @@ const faqLd = {
   </section>
 
   <!-- ─── Categorías ─────────────────────────────── -->
-  <section class="section cats" aria-labelledby="cats-title">
+  <section class="section cats" aria-labelledby="cats-title" data-hscroll>
     <div class="wrap">
       <div class="section-head">
         <h2 id="cats-title" class="section-title deboss" data-press>{L(home.categoriesTitle)}</h2>
         <a class="link-arrow" href={path(locale, 'shop')}>{t(locale, 'cta.all')} <Icon name="arrow" /></a>
       </div>
       <hr class="stitch" data-stitch aria-hidden="true" />
-      <ul role="list" class="cats__row" data-rise>
+      <ul role="list" class="cats__row" data-rise data-hscroll-row>
         {
           categories.map((c) => (
             <li>
@@ -129,7 +130,7 @@ const faqLd = {
     <div class="wrap direct__inner">
       <img src="/brand/mark-choc.png" width="297" height="128" alt="" class="direct__mark" loading="lazy" />
       <h2 id="direct-title" class="direct__title deboss" data-press>{L(home.direct.title)} <PendingNote locale={locale} show={home.direct.pending} /></h2>
-      <p class="lead direct__body">{L(home.direct.body)}</p>
+      <p class="direct__body" data-words>{L(home.direct.body)}</p>
       <a class="btn" href={waLink(settings.whatsapp)} target="_blank" rel="noopener"><Icon name="whatsapp" /> {t(locale, 'cta.whatsapp')}</a>
     </div>
   </section>
@@ -202,7 +203,7 @@ const faqLd = {
   <!-- ─── Cierre ─────────────────────────────────── -->
   <section class="section section--light closing" aria-labelledby="closing-title">
     <div class="wrap closing__inner">
-      <h2 id="closing-title" class="closing__title deboss" data-press>{L(home.closing.title)}</h2>
+      <h2 id="closing-title" class="closing__title deboss" data-grow>{L(home.closing.title)}</h2>
       <p class="lead">{L(home.closing.body)}</p>
       <div class="hero__actions">
         <a class="btn" href={path(locale, 'shop')}>{t(locale, 'cta.shop')} <Icon name="arrow" /></a>
@@ -224,18 +225,22 @@ const faqLd = {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-rows: auto 1fr;
     column-gap: var(--gutter);
-    --stamp: min(calc((100cqi - 2 * var(--gutter)) / 3.6), 26rem);
+    /* ALPEZ en Prata mide ~3.8em de ancho. Escritorio: 7/12 columnas; móvil: todo el ancho */
+    --stamp: min(calc((100cqi - 2 * var(--gutter)) / 3.95), 25rem);
     align-items: start;
   }
   .hero__stamp {
     grid-column: 1 / -1;
     grid-row: 1;
+    justify-self: start;
+    display: inline-grid;
+    font-family: var(--font-display);
     font-size: var(--stamp);
-    font-weight: 800;
-    font-stretch: 125%;
-    letter-spacing: -0.03em;
-    line-height: 0.8;
-    margin-left: -0.04em;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 0.95;
+    margin-left: -0.03em;
+    padding-top: 0.06em;
     transform-origin: left top;
     user-select: none;
     filter: url(#press);
@@ -245,6 +250,19 @@ const faqLd = {
     text-shadow:
       0 calc(0.012em * var(--press)) 0 rgb(250 238 222 / calc(0.5 * var(--press))),
       0 calc(-0.008em * var(--press)) calc(0.012em * var(--press)) rgb(20 10 6 / calc(0.45 * var(--press)));
+  }
+  .hero__alpez {
+    display: block;
+    white-space: nowrap;
+  }
+  /* LEATHER espaciado al ancho exacto de ALPEZ, como en el logo */
+  .hero__leather {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.17em;
+    line-height: 1;
+    margin-top: 0.3em;
+    padding-inline: 0.1em 0.04em;
   }
   .hero__copy {
     grid-column: 1 / span 5;
@@ -267,14 +285,23 @@ const faqLd = {
     flex-wrap: wrap;
     gap: var(--s-3);
   }
+  @media (min-width: 901px) {
+    .hero__inner {
+      --stamp: min(calc((100cqi - 2 * var(--gutter)) * 0.6 / 3.95), 15rem);
+    }
+    .hero__stamp {
+      grid-column: 1 / span 8;
+    }
+  }
   .hero__piece {
-    grid-column: 7 / -1;
+    grid-column: 8 / -1;
     grid-row: 1 / span 2;
-    margin-top: calc(var(--stamp) * 0.5);
+    align-self: center;
+    margin-top: var(--s-5);
     position: relative;
     z-index: 1;
     justify-self: end;
-    width: min(100%, calc((88svh - var(--header-h) - var(--stamp) * 0.5 - 4rem) * 0.8));
+    width: min(100%, calc((88svh - var(--header-h) - 4rem) * 0.8));
   }
   .hero__piece-link {
     display: block;
@@ -304,6 +331,21 @@ const faqLd = {
   .cats__row > li {
     scroll-snap-align: start;
   }
+  .cats {
+    min-height: calc(100svh - var(--header-h));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+  }
+  .cats__row:global(.is-hscroll) {
+    overflow: visible;
+    scroll-snap-type: none;
+    grid-auto-columns: clamp(16rem, 23vw, 22rem);
+  }
+  .cats :global(.wrap) {
+    overflow: clip;
+    overflow-clip-margin: 0;
+  }
   .cat {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -318,9 +360,8 @@ const faqLd = {
     transform: translateY(-4px);
   }
   .cat__name {
+    font-family: var(--font-display);
     font-size: var(--text-lg);
-    font-weight: 700;
-    font-stretch: var(--wide);
   }
   .cat:hover .cat__name {
     text-decoration: underline;
@@ -338,6 +379,12 @@ const faqLd = {
   }
 
   /* Directo */
+  .direct {
+    min-height: calc(100svh - var(--header-h));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+  }
   .direct__inner {
     display: grid;
     justify-items: center;
@@ -350,12 +397,14 @@ const faqLd = {
   }
   .direct__title {
     font-size: clamp(2.6rem, 1.4rem + 5vw, 6rem);
-    font-weight: 800;
+    font-weight: 400;
     max-width: 14ch;
   }
   .direct__body {
-    max-width: 46ch;
+    max-width: 30ch;
     margin-bottom: var(--s-3);
+    font-size: var(--text-xl);
+    line-height: 1.35;
   }
 
   /* Oficio */
@@ -363,7 +412,13 @@ const faqLd = {
     display: grid;
     grid-template-columns: 5fr 6fr;
     gap: clamp(2rem, 6vw, 7rem);
-    align-items: center;
+    align-items: start;
+  }
+  @media (min-width: 901px) {
+    .craft__media {
+      position: sticky;
+      top: calc(var(--header-h) + var(--s-6));
+    }
   }
   .craft__text {
     display: grid;
@@ -395,6 +450,7 @@ const faqLd = {
 
   /* Instagram */
   .insta__inner {
+    container-type: inline-size;
     display: grid;
     justify-items: start;
     gap: var(--s-5);
@@ -407,13 +463,13 @@ const faqLd = {
     display: inline-flex;
     align-items: center;
     gap: var(--s-4);
-    font-size: clamp(2.2rem, 1rem + 6vw, 7rem);
-    font-weight: 800;
-    font-stretch: 125%;
-    letter-spacing: -0.03em;
+    font-family: var(--font-display);
+    font-size: min(7rem, 8.6cqi);
+    font-weight: 400;
+    letter-spacing: -0.01em;
     line-height: 1;
+    white-space: nowrap;
     text-decoration: none;
-    word-break: break-word;
   }
   .insta__handle:hover {
     text-decoration: underline;
@@ -465,7 +521,7 @@ const faqLd = {
   }
   .closing__title {
     font-size: clamp(2.4rem, 1.2rem + 5vw, 5.5rem);
-    font-weight: 800;
+    font-weight: 400;
     max-width: 16ch;
   }
 

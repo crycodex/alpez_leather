@@ -1,6 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
 import ProductCard from '@/components/site/ProductCard.astro';
+import Dropdown from '@/components/site/Dropdown.astro';
 import { getCategories, getProducts } from '@/lib/server/repo';
 import { loc, path, plural, t } from '@/i18n';
 import type { Category, Locale } from '@/lib/schemas';
@@ -51,14 +52,15 @@ const listLd = {
         </nav>
         <div class="shop__meta">
           <span class="label num">{plural(locale, products.length, 'shop.count.one', 'shop.count.other')}</span>
-          <label class="sort">
-            <span class="sr-only">{t(locale, 'shop.sort')}</span>
-            <select data-sort>
-              <option value="default">{t(locale, 'shop.sort.default')}</option>
-              <option value="asc">{t(locale, 'shop.sort.priceAsc')}</option>
-              <option value="desc">{t(locale, 'shop.sort.priceDesc')}</option>
-            </select>
-          </label>
+          <Dropdown
+            name="sort"
+            label={t(locale, 'shop.sort')}
+            options={[
+              { value: 'default', label: t(locale, 'shop.sort.default') },
+              { value: 'asc', label: t(locale, 'shop.sort.priceAsc') },
+              { value: 'desc', label: t(locale, 'shop.sort.priceDesc') },
+            ]}
+          />
         </div>
       </div>
       <hr class="stitch" data-stitch aria-hidden="true" />
@@ -92,8 +94,8 @@ const listLd = {
   }
   .shop__title {
     font-size: clamp(3rem, 1.5rem + 7vw, 8rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-weight: 400;
+    letter-spacing: -0.01em;
     line-height: 0.9;
   }
   .shop__bar {
@@ -140,21 +142,6 @@ const listLd = {
     gap: var(--s-5);
     color: var(--choc);
   }
-  .sort select {
-    appearance: none;
-    min-height: 2.5rem;
-    padding: 0 2.2rem 0 var(--s-4);
-    border: 0;
-    border-radius: var(--radius);
-    background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a3624' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
-        no-repeat right 0.8rem center,
-      var(--sand-pale);
-    box-shadow: var(--deboss-box);
-    font-size: var(--text-sm);
-    color: var(--ink);
-    cursor: pointer;
-  }
   .shop__grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -195,14 +182,15 @@ const listLd = {
 
 <script>
   document.addEventListener('astro:page-load', () => {
-    const select = document.querySelector<HTMLSelectElement>('[data-sort]');
+    const select = document.querySelector<HTMLElement>('[data-dropdown][data-name="sort"]');
     const grid = document.querySelector<HTMLElement>('[data-grid]');
     if (!select || !grid) return;
     select.addEventListener('change', () => {
+      const value = select.dataset.value;
       const cards = [...grid.children] as HTMLElement[];
       const price = (el: HTMLElement) => Number(el.dataset.price ?? 0) || Infinity;
       const order = (el: HTMLElement) => Number(el.dataset.order ?? 0);
-      cards.sort((a, b) => (select.value === 'asc' ? price(a) - price(b) : select.value === 'desc' ? (price(b) === Infinity ? -1 : price(a) === Infinity ? 1 : price(b) - price(a)) : order(a) - order(b)));
+      cards.sort((a, b) => (value === 'asc' ? price(a) - price(b) : value === 'desc' ? (price(b) === Infinity ? -1 : price(a) === Infinity ? 1 : price(b) - price(a)) : order(a) - order(b)));
       grid.append(...cards);
     });
   });

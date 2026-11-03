@@ -1,0 +1,167 @@
+---
+/**
+ * Desplegable propio (patrón listbox de WAI-ARIA). Reemplaza al <select> nativo.
+ * Emite el evento `change` con `detail` = valor elegido sobre el contenedor.
+ */
+interface Props {
+  label: string;
+  options: { value: string; label: string }[];
+  value?: string;
+  name: string;
+}
+const { label, options, value = options[0]?.value, name } = Astro.props;
+const current = options.find((o) => o.value === value) ?? options[0];
+const id = `dd-${name}`;
+---
+<div class="dd" data-dropdown data-name={name} data-value={current?.value}>
+  <span class="sr-only" id={`${id}-label`}>{label}</span>
+  <button type="button" class="dd__btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby={`${id}-label ${id}-btn`} id={`${id}-btn`}>
+    <span data-dd-current>{current?.label}</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+  </button>
+  <ul class="dd__list" role="listbox" aria-labelledby={`${id}-label`} tabindex="-1" hidden>
+    {
+      options.map((o) => (
+        <li role="option" data-value={o.value} aria-selected={o.value === current?.value ? 'true' : 'false'}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
+          {o.label}
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .dd {
+    position: relative;
+  }
+  .dd__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    min-height: 2.5rem;
+    padding: 0 var(--s-4);
+    border-radius: var(--radius);
+    background: var(--sand-pale);
+    box-shadow: var(--deboss-box);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .dd__btn svg {
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .dd__btn[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+  }
+  .dd__list {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 20;
+    min-width: 100%;
+    list-style: none;
+    padding: var(--s-2);
+    margin: 0;
+    border-radius: var(--radius);
+    background: var(--sand-light);
+    box-shadow:
+      0 1px 0 rgb(250 238 222 / 0.7) inset,
+      0 18px 40px -16px rgb(43 26 18 / 0.5);
+    transform-origin: top right;
+    animation: dd-in 0.25s var(--ease-out);
+  }
+  .dd__list:focus {
+    outline: none;
+  }
+  .dd__list li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0.55rem var(--s-3);
+    border-radius: 4px;
+    font-size: var(--text-sm);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .dd__list li svg {
+    visibility: hidden;
+  }
+  .dd__list li[aria-selected='true'] {
+    font-weight: 600;
+  }
+  .dd__list li[aria-selected='true'] svg {
+    visibility: visible;
+  }
+  .dd__list li:hover,
+  .dd__list li.is-active {
+    background: var(--sand-shade);
+    box-shadow: var(--deboss-box);
+  }
+  @keyframes dd-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+</style>
+
+<script>
+  function initDropdowns() {
+    document.querySelectorAll<HTMLElement>('[data-dropdown]').forEach((dd) => {
+      const btn = dd.querySelector<HTMLButtonElement>('.dd__btn')!;
+      const list = dd.querySelector<HTMLUListElement>('.dd__list')!;
+      const opts = [...list.querySelectorAll<HTMLLIElement>('[role="option"]')];
+      let active = Math.max(0, opts.findIndex((o) => o.getAttribute('aria-selected') === 'true'));
+      const highlight = (i: number) => {
+        active = (i + opts.length) % opts.length;
+        opts.forEach((o, j) => o.classList.toggle('is-active', j === active));
+        list.setAttribute('aria-activedescendant', (opts[active]!.id ||= `${dd.dataset.name}-o${active}`));
+      };
+      const open = () => {
+        list.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+        highlight(active);
+        list.focus();
+      };
+      const close = (focus = true) => {
+        list.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        if (focus) btn.focus();
+      };
+      const choose = (i: number) => {
+        const o = opts[i]!;
+        opts.forEach((x) => x.setAttribute('aria-selected', String(x === o)));
+        dd.dataset.value = o.dataset.value;
+        dd.querySelector('[data-dd-current]')!.textContent = o.textContent!.trim();
+        dd.dispatchEvent(new CustomEvent('change', { detail: o.dataset.value }));
+        close();
+      };
+      btn.addEventListener('click', () => (list.hidden ? open() : close()));
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          open();
+        }
+      });
+      opts.forEach((o, i) => {
+        o.addEventListener('click', () => choose(i));
+        o.addEventListener('mousemove', () => highlight(i));
+      });
+      list.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') highlight(active + 1);
+        else if (e.key === 'ArrowUp') highlight(active - 1);
+        else if (e.key === 'Home') highlight(0);
+        else if (e.key === 'End') highlight(opts.length - 1);
+        else if (e.key === 'Enter' || e.key === ' ') choose(active);
+        else if (e.key === 'Escape') close();
+        else if (e.key === 'Tab') close(false);
+        else return;
+        e.preventDefault();
+      });
+      document.addEventListener('click', (e) => !dd.contains(e.target as Node) && !list.hidden && close(false));
+    });
+  }
+  document.addEventListener('astro:page-load', initDropdowns);
+</script>

@@ -29,6 +29,8 @@ try {
   user = await auth.createUser({ email, password, emailVerified: true });
   console.log(`✓ Usuario creado: ${email}`);
 }
+// Claim para las reglas de Storage (no pueden leer una base de Firestore con nombre)
+await auth.setCustomUserClaims(user.uid, { ...(user.customClaims ?? {}), admin: true });
 await db.collection('admins').doc(user.uid).set({ email, role: 'owner', createdAt: Date.now() }, { merge: true });
 console.log(`✓ ${email} es administrador (uid ${user.uid})`);
 process.exit(0);

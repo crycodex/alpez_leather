@@ -30,3 +30,4 @@ firestore-debug.log
 ui-debug.log
 .vercel/
 serviceAccount*.json
+.secrets/

@@ -36,7 +36,9 @@ function init(): App | null {
 
 export function getDb(): Firestore | null {
   const a = init();
-  return a ? getFirestore(a) : null;
+  if (!a) return null;
+  const dbId = env('FIREBASE_DATABASE_ID') || env('PUBLIC_FIREBASE_DATABASE_ID');
+  return dbId && dbId !== '(default)' ? getFirestore(a, dbId) : getFirestore(a);
 }
 
 export function getAdminAuth(): Auth | null {

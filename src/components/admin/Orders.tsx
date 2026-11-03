@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ORDER_STATUS, type Order, type OrderStatus } from '@/lib/schemas';
 import { setOrderStatus, useOrders } from './data';
+import { Listbox } from './Listbox';
 import { Badge, Empty, Loading, PageHead, fmtDate, fmtMoney, useToast } from './ui';
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -96,12 +97,7 @@ function OrderRow({ order: o, open, onToggle, onStatus }: { order: Order; open: 
           {o.hasUnpricedItems && <div className="a-muted">+ por confirmar</div>}
         </td>
         <td onClick={(e) => e.stopPropagation()}>
-          <label className="sr-only" htmlFor={`st-${o.id}`}>Estado</label>
-          <select id={`st-${o.id}`} className={`a-input a-select a-status a-status--${STATUS_TONE[o.status]}`} value={o.status} onChange={(e) => onStatus(e.target.value as OrderStatus)}>
-            {ORDER_STATUS.map((s) => (
-              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-            ))}
-          </select>
+          <Listbox className={`a-status a-status--${STATUS_TONE[o.status]}`} ariaLabel={`Estado del pedido ${o.code}`} value={o.status} onChange={onStatus} options={ORDER_STATUS.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
         </td>
       </tr>
       {open && (

@@ -67,11 +67,18 @@ h1,
 h2,
 h3,
 h4 {
-  line-height: 1.05;
-  font-weight: 700;
-  font-stretch: var(--wide);
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  line-height: 1.08;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   text-wrap: balance;
+}
+/* Las palabras nunca se parten ni llevan guion de continuación */
+html {
+  hyphens: manual;
+  -webkit-hyphens: manual;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 p {
   text-wrap: pretty;
@@ -148,11 +155,11 @@ html {
   text-shadow: var(--deboss-text);
 }
 .label {
-  font-size: var(--text-xs);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 400;
   letter-spacing: var(--label-track);
   text-transform: uppercase;
-  font-stretch: var(--wide);
 }
 .lead {
   font-size: var(--text-md);
@@ -356,4 +363,29 @@ textarea.input {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─── Barras de scroll y números, a medida ─── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--choc);
+  border-radius: 999px;
+  border: 2px solid var(--sand-light);
+}
+::-webkit-scrollbar-track {
+  background: var(--sand-light);
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  appearance: textfield;
+}
+textarea.input::-webkit-resizer {
+  background: transparent;
 }

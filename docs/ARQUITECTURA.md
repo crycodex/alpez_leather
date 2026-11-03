@@ -76,13 +76,19 @@ Productos con precio `0` se muestran como «Precio por confirmar» y el mensaje 
 | `data-reveal` | Fotos que se descubren de abajo hacia arriba |
 | `data-rise` | Grupos que entran escalonados |
 | `data-stitch` | Pespuntes que se «cosen» de izquierda a derecha |
+| `data-hero` | **Escena fijada**: el sello se presiona y se aleja, el texto se desvanece y la pieza sube (scrub) |
+| `data-hscroll` / `data-hscroll-row` | **Escena fijada** (escritorio): las categorías recorren en horizontal con el scroll |
+| `data-words` | **Escena fijada**: las palabras del manifiesto «Fabricantes directos» se encienden con el scroll |
+| `data-grow` | El título de cierre crece hasta su tamaño al llegar |
+
+Las escenas fijadas usan `gsap.matchMedia` (versiones distintas para escritorio y móvil) y se fijan justo debajo del header.
 
 Con `prefers-reduced-motion` no se anima nada y Lenis no se activa. El contenido es visible sin JavaScript. Con View Transitions (`ClientRouter`), todo se limpia en `astro:before-swap` y se reinicia en `astro:page-load`.
 
 ## Seguridad
 
-- `firestore.rules`: lectura pública solo del catálogo y del contenido; escritura solo para `admins`. `orders` y `stats_daily` solo los lee un admin; del pedido solo puede cambiar `status`.
-- `storage.rules`: lectura pública de `products/`, `categories/` y `content/`; subida solo para admins, solo imágenes de menos de 8 MB.
+- `firestore.rules`: lectura pública solo del catálogo y del contenido; escritura solo para admins (claim `admin` o documento en `admins/`). `orders` y `stats_daily` solo los lee un admin; del pedido solo puede cambiar `status`.
+- `storage.rules`: lectura pública de `products/`, `categories/` y `content/`; subida solo para admins (claim `admin: true`), solo imágenes de menos de 8 MB.
 - Las APIs públicas validan con zod, comprueban el origen y limitan la frecuencia de peticiones. `/api/revalidate` exige un ID token válido de un admin.
 - La clave de servicio de Firebase vive solo en variables de entorno del servidor.
 

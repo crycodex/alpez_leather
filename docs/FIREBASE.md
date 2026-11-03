@@ -1,5 +1,14 @@
 # Configurar Firebase
 
+> **Estado actual (2026-11-03):** el proyecto `alpez-leather` ya está configurado: Auth (correo/contraseña), Firestore (base **`default`**, edición Enterprise, modo nativo), Storage (`alpez-leather.firebasestorage.app`), reglas publicadas y contenido inicial cargado. Solo falta crear el usuario administrador (paso 4). Esta guía sirve para recrear el proyecto o montar otro entorno.
+
+### Nota: base de datos con nombre
+
+La base de Firestore de este proyecto se llama `default` (sin paréntesis), no `(default)`. Por eso:
+- `.env` define `FIREBASE_DATABASE_ID=default` y `PUBLIC_FIREBASE_DATABASE_ID=default`;
+- `firebase.json` declara `"database": "default"`;
+- las reglas de Storage no pueden consultar Firestore en una base con nombre, así que los administradores se identifican con el *custom claim* `admin: true`, que pone `npm run create-admin`. Si se agrega un admin a mano en la consola, también hay que asignarle ese claim (vuelve a correr `create-admin` con su correo).
+
 ## 1. Crear el proyecto
 
 1. Entra a https://console.firebase.google.com → **Agregar proyecto** (p. ej. `alpez-leather`). Analytics es opcional.
@@ -38,7 +47,6 @@ FIREBASE_STORAGE_BUCKET=alpez-leather.firebasestorage.app
 ```bash
 npm i -g firebase-tools
 firebase login
-cp .firebaserc.example .firebaserc   # y pon el ID de tu proyecto
 npm run deploy:rules
 ```
 

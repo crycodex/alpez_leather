@@ -4,6 +4,7 @@ import { deleteImage, newId, removeDoc, slugify, useCollection, writeDoc } from 
 import { ImagesField } from './ImageUploader';
 import { Badge, Button, Empty, Icon, L10nInput, Loading, PageHead, Panel, Select, TextInput, Toggle, fmtMoney, useToast } from './ui';
 import { go } from './AdminApp';
+import { Check, Listbox } from './Listbox';
 
 const STOCK_LABEL: Record<(typeof STOCK_STATUS)[number], string> = {
   available: 'Disponible',
@@ -51,16 +52,18 @@ function ProductList({ products, categories }: { products: Product[]; categories
           <span className="sr-only">Buscar</span>
           <input className="a-input" placeholder="Buscar por nombre…" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
-        <select className="a-input a-select" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Categoría">
-          <option value="">Todas las categorías</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name.es}</option>)}
-        </select>
-        <select className="a-input a-select" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Estado">
-          <option value="all">Todos</option>
-          <option value="active">Visibles</option>
-          <option value="hidden">Ocultos</option>
-          <option value="pending">Pendientes</option>
-        </select>
+        <Listbox ariaLabel="Categoría" value={cat} onChange={setCat} options={[{ value: '', label: 'Todas las categorías' }, ...categories.map((c) => ({ value: c.id, label: c.name.es }))]} />
+        <Listbox
+          ariaLabel="Estado"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: 'all', label: 'Todos' },
+            { value: 'active', label: 'Visibles' },
+            { value: 'hidden', label: 'Ocultos' },
+            { value: 'pending', label: 'Pendientes' },
+          ]}
+        />
       </div>
       {list.length === 0 ? (
         <Empty title={products.length ? 'Ningún producto coincide con el filtro' : 'Aún no hay productos'}>
@@ -285,7 +288,7 @@ function VariantEditor({ variant, onChange, onRemove }: { variant: Variant; onCh
               <td><input className="a-input" aria-label="Opción en español" value={o.label.es} onChange={(e) => setOpt(i, { label: { ...o.label, es: e.target.value } })} /></td>
               <td><input className="a-input" aria-label="Opción en inglés" value={o.label.en} onChange={(e) => setOpt(i, { label: { ...o.label, en: e.target.value } })} /></td>
               <td><input className="a-input num" aria-label="Diferencia de precio" type="number" step="0.01" value={o.priceDelta || ''} onChange={(e) => setOpt(i, { priceDelta: Number(e.target.value) || 0 })} /></td>
-              <td><input type="checkbox" aria-label="Disponible" checked={o.available} onChange={(e) => setOpt(i, { available: e.target.checked })} /></td>
+              <td><Check label="Disponible" checked={o.available} onChange={(v) => setOpt(i, { available: v })} /></td>
               <td>
                 <Button variant="quiet" icon="trash" aria-label="Quitar opción" onClick={() => onChange({ ...variant, options: variant.options.filter((_, j) => j !== i) })} />
               </td>

@@ -4,8 +4,8 @@ Lo que falta para salir a producción. Todo lo de contenido se carga desde el pa
 
 ## Configuración (bloquea el lanzamiento)
 
-- [ ] Crear el proyecto Firebase y completar `.env` → [FIREBASE.md](FIREBASE.md)
-- [ ] Publicar reglas (`npm run deploy:rules`), correr `npm run seed` y crear el admin
+- [x] Proyecto Firebase `alpez-leather` conectado: `.env` completo (incluye la clave de servicio), reglas publicadas y contenido inicial cargado en la base `default` (2026-11-03)
+- [ ] **Crear tu usuario administrador**: `npm run create-admin -- tu@correo.com "contraseña-segura"`
 - [ ] Proyecto en Vercel con sus variables → [DESPLIEGUE-VERCEL.md](DESPLIEGUE-VERCEL.md)
 - [ ] Dominio definitivo (¿`alpezleather.com`?) → actualizar `PUBLIC_SITE_URL` y los dominios autorizados de Firebase
 
